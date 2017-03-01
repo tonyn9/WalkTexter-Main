@@ -1,10 +1,15 @@
 from bluetoothConnect import *
+from cvDetection import *
 from sensor import *
+
+#bit set up
+SENSOR_BIT_FLAG = 1
 
 # ultrasonic sensor setup
 sensor = sensor()
 
-# camera setup
+# CV setup
+cvDetection = cvDetection()
 
 #bluetooth setup
 server_sock=BluetoothSocket( RFCOMM )
@@ -30,13 +35,18 @@ if __name__ == '__main__':
 	try :
 		while True:
 			# print "hello"
+			bit = 0
+                        isDetected = False
 			if sensor.detectObst():
-				status = "status:warning"
-				bltSoc.send(status)
-				time.sleep(1)
-			# prepare the string to send
-			# data = ******
-			# bltSoc.send(data)  
+                                bit ^= SENSOR_BIT_FLAG
+                                isDetected = True
+                        findSign, detectedBitFlag = cvDetection.isCVDetected()
+			if findSign:
+                                bit ^= detectedBitFlag
+                                isDetected = True
+                        if isDetected:
+                                status = "status:warning" + bit 
+                                bltSoc.send(status)
 
 	except (IOError) as err:
 		pass
