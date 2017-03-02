@@ -57,6 +57,7 @@ if __name__ == '__main__':
 	except (KeyboardInterrupt):
 		print "disconnected"
 		bltSoc.close()
+		cvDetection.close()
 		print "all done"
 	finally:
 		sensor.close()
