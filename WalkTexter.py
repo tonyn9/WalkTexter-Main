@@ -49,6 +49,8 @@ if __name__ == '__main__':
 				print bin(bit)
 				status = "status:warning:" + str(bit)
 				bltSoc.send(status)
+				
+				# sleeping for 2 sec, can be adjusted
 				time.sleep(2)
 
 	except (IOError) as err:
