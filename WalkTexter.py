@@ -21,10 +21,10 @@ port = server_sock.getsockname()[1]
 uuid = "00001101-0000-1000-8000-00805F9B34FB"
 
 advertise_service( server_sock, "WalkText",
-                   service_id = uuid,
-                   service_classes = [ uuid, SERIAL_PORT_CLASS ],
-                   profiles = [ SERIAL_PORT_PROFILE ], 
-        		)
+					service_id = uuid,
+					service_classes = [ uuid, SERIAL_PORT_CLASS ],
+					profiles = [ SERIAL_PORT_PROFILE ], 
+					)
 print "Waiting for connection on RFCOMM channel %d" % port
 client_sock, client_info = server_sock.accept()
 print "Accepted connection from " , client_info
@@ -36,17 +36,20 @@ if __name__ == '__main__':
 		while True:
 			# print "hello"
 			bit = 0
-                        isDetected = False
+			isDetected = False
+			findSign = False
 			if sensor.detectObst():
-                                bit ^= SENSOR_BIT_FLAG
-                                isDetected = True
-                        findSign, detectedBitFlag = cvDetection.isCVDetected()
+				bit ^= SENSOR_BIT_FLAG
+				isDetected = True
+			findSign, detectedBitFlag = cvDetection.isCVDetected()
 			if findSign:
-                                bit ^= detectedBitFlag
-                                isDetected = True
-                        if isDetected:
-                                status = "status:warning" + bit 
-                                bltSoc.send(status)
+				bit ^= detectedBitFlag
+				isDetected = True
+			if isDetected:
+				print bin(bit)
+				status = "status:warning:" + str(bit)
+				bltSoc.send(status)
+				time.sleep(2)
 
 	except (IOError) as err:
 		pass

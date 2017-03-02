@@ -33,7 +33,7 @@ class sensor:
 
 		distance = round(distance, 2)
 
-		return distance < 200
+		return distance < 50
 
 	def close(self):
 		GPIO.cleanup()
