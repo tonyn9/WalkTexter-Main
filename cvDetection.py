@@ -1,21 +1,51 @@
+###############################################################
+## Copyright TEAM SALT 2017 - All Rights Reserved 
+## 
+## File: cvDetection.py
+##
+## Description:
+##		cvDetection class
+##
+## History:
+##		Date		Update Description		Developer
+##	------------	-------------------		------------
+##	2/27/2017		Created					SC,AY
+##
+###############################################################
+
+# include libraries
 import time
 import cv2
 
+# defining and init vars
 IMAGE_SIZE = 200.0
-MATCH_THRESHOLD = 3
+#MATCH_THRESHOLD = 3
 FRAME_THRESHOLD = 10
 NUM_DETECTED_THRESHOLD = 3
-STOPSIGN_BIT_FLAG = 2
-class cvDetection:
-	stopSignCascade = None
+#STOPSIGN_BIT_FLAG = 2
+
+cascadeNameList = ['frontal_stop_sign_cascade.xml','dont_walk_cascade.xml']
+prototypeNameList = ['stopPrototype.png','dontWalkPrototype.png']
+matchThresHoldList = [3,160]
+minNeighborsList = [3,6]
+
+class cvDetectionClass:
+	#stopSignCascade = None
+	cascadeList = []
+	prototypeList = []
 	cap = None
-	stopSignPrototype = None
+	#stopSignPrototype = None
 	def __init__(self):
-		self.stopSignCascade = cv2.CascadeClassifier('frontal_stop_sign_cascade.xml')
-		self.stopSignPrototype = cv2.imread('stopPrototype.png',0)
+		#self.stopSignCascade = cv2.CascadeClassifier('frontal_stop_sign_cascade.xml')
+		#self.stopSignPrototype = cv2.imread('stopPrototype.png',0)
+		for cascade, prototype in zip(cascadeNameList,prototypeNameList):
+			self.cascadeList.append(cv2.CascadeClassifier(cascade))
+			self.prototypeList.append(cv2.imread(prototype,0))
+
 		self.cap = cv2.VideoCapture(0)
 		if not self.cap.isOpened():
-			print "DEBUG: camera can not be opened"
+			if __debug__:
+				print "DEBUG: camera can not be opened"
 			exit()
 		time.sleep(0.1)
 
@@ -24,20 +54,23 @@ class cvDetection:
 		numOfDetected = 0
 		for i in range(FRAME_THRESHOLD):
 			ret, frame = self.cap.read()
-			if self.isThisCascadeDetected(frame, self.stopSignCascade, self.stopSignPrototype):   
-				numOfDetected += 1
-				if numOfDetected > NUM_DETECTED_THRESHOLD:
-					bit ^= STOPSIGN_BIT_FLAG 
-					return True, bit
+
+			for i in range(len(self.cascadeList)):
+				if self.isThisCascadeDetected(frame, self.cascadeList[i], 
+						self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]):   
+					numOfDetected += 1
+					if numOfDetected > NUM_DETECTED_THRESHOLD:
+						bit ^= 2**(i+1)
+						return True, bit
 		return False, bit
 		
 
-	def isThisCascadeDetected(self, frame, xml, prototype):  
+	def isThisCascadeDetected(self, frame, xml, prototype, matchThreshold, minNeighbor):  
 		gray = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
 		haarCascadeObject = xml.detectMultiScale(
 								gray, 
 								scaleFactor=1.4, 
-								minNeighbors=3)
+								minNeighbors=minNeighbor)
 
 		orb = cv2.ORB_create()
 		bf = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
@@ -60,8 +93,9 @@ class cvDetection:
 			matches = bf.match(des_r,des_o)
 
 			# draw object on street image, if threshold met
-			if(len(matches) >= MATCH_THRESHOLD):
-				print "DEBUG: Found a match! Length of match: %d" % len(matches)
+			if(len(matches) >= matchThreshold):
+				if __debug__:
+					print "DEBUG: Found a match! Length of match: %d" % len(matches)
 				isFoundMatch = True
 
 		return isFoundMatch

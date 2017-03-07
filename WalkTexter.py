@@ -1,17 +1,33 @@
+###############################################################
+## Copyright TEAM SALT 2017 - All Rights Reserved 
+## 
+## File: WalkTexter.py
+##
+## Description:
+##		Main program for Walk Texter running on raspberry pi
+##
+## History:
+##		Date		Update Description		Developer
+##	------------	-------------------		------------
+##	2/27/2017		Created					SC,AY
+##
+###############################################################
+
+# import user-defined classes
 from bluetoothConnect import *
 from cvDetection import *
 from sensor import *
 
-#bit set up
-SENSOR_BIT_FLAG = 1
+# defining vars
+SENSOR_BIT_FLAG = 1		#big flag indicating that sensor has detected an obstacle
 
 # ultrasonic sensor setup
-sensor = sensor()
+sensor = sensorClass()	#creating a sensor class
 
 # CV setup
-cvDetection = cvDetection()
+cvDetect = cvDetectionClass()   #creating a cvDetection class
 
-#bluetooth setup
+# bluetooth setup
 server_sock=BluetoothSocket( RFCOMM )
 server_sock.bind(("",PORT_ANY))
 server_sock.listen(1)
@@ -23,43 +39,61 @@ uuid = "00001101-0000-1000-8000-00805F9B34FB"
 advertise_service( server_sock, "WalkText",
 					service_id = uuid,
 					service_classes = [ uuid, SERIAL_PORT_CLASS ],
-					profiles = [ SERIAL_PORT_PROFILE ], 
-					)
-print "Waiting for connection on RFCOMM channel %d" % port
-client_sock, client_info = server_sock.accept()
-print "Accepted connection from " , client_info
+					profiles = [ SERIAL_PORT_PROFILE ] )
 
-bltSoc = bluetoothConnect(client_sock, server_sock)
+if __debug__:
+	print "Waiting for connection on RFCOMM channel %d" % port
+client_sock, client_info = server_sock.accept()
+if __debug__:
+	print "Accepted connection from " , client_info
+
+bltSoc = bluetoothConnectClass(client_sock, server_sock)   #create a bluetoothConnect class
 
 if __name__ == '__main__':
 	try :
 		while True:
-			# print "hello"
-			bit = 0
-			isDetected = False
-			findSign = False
+
+			# init and set some local vars
+			detectBitsMsg = 0	#this var will be send to the android app if something has been detected
+								#each bit position determines if a certan detection has been detected
+			
+			isDetected = False	#flag is init to false, set to true if something has been detected to send it
+			cvHasFoundSign = False 	#flag is init to false, set to true if CVdetect has detected something
+			
+			# if ultrasonic sensor has detected something
 			if sensor.detectObst():
-				bit ^= SENSOR_BIT_FLAG
-				isDetected = True
-			findSign, detectedBitFlag = cvDetection.isCVDetected()
-			if findSign:
-				bit ^= detectedBitFlag
-				isDetected = True
+				detectBitsMsg ^= SENSOR_BIT_FLAG 	#set the first bit to 1
+				isDetected = True 	#set detection flag to true to send it to app
+			
+			if not isDetected:
+				# check if cvDetection has detected something
+				cvHasFoundSign, detectedBitFlag = cvDetect.isCVDetected()
+				if cvHasFoundSign: 	#if cvDetection found something
+					detectBitsMsg ^= detectedBitFlag 	#set the bits that were detect to 1
+					isDetected = True
+
+			# if something was detected send warning message to the phone app
 			if isDetected:
-				print bin(bit)
-				status = "status:warning:" + str(bit)
+				if __debug__:
+					print bin(detectBitsMsg)
+				status = "status:warning:" + str(detectBitsMsg)
 				bltSoc.send(status)
 				
-				# sleeping for 2 sec, can be adjusted
-				time.sleep(2)
+				# sleeping for 2 sec, adjust accordingly
+				if not cvHasFoundSign:
+					time.sleep(2)
 
 	except (IOError) as err:
 		pass
 
 	except (KeyboardInterrupt):
-		print "disconnected"
+		if __debug__:
+			print "disconnected"
+
+		# close/cleanup bluetooth and cvdetection
 		bltSoc.close()
-		cvDetection.close()
-		print "all done"
+		cvDetect.close()
+		if __debug__:
+			print "all done"
 	finally:
 		sensor.close()
