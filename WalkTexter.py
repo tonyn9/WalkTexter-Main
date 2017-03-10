@@ -77,13 +77,13 @@ if __name__ == '__main__':
 				cvHasFoundSign, detectedBitFlag = cvDetect.isCVDetected()
 				numOfFrame += 1
 				if cvHasFoundSign: 	#if cvDetection found something
-					print 'detected, numOfFrame=' + str(numOfFrame) + ':' + str(bin(detectedBitFlag))
+					# print 'detected, numOfFrame=' + str(numOfFrame) + ':' + str(bin(detectedBitFlag))
  					for i in range(3):
-						bitArray[i] += (detectedBitFlag & 2**(i+1)) >> (i+1)
+						bitArray[i] += (detectedBitFlag & (2**(i+1))) >> (i+1)
 						if bitArray[i] >= THRESHOLD:
 							detectBitsMsg ^= 2**(i+1)
 							bitArray[i] = 0
-							ifDetected = 10
+							isDetected = True
 
 				if numOfFrame >= 10:
 					numOfFrame = 0;
