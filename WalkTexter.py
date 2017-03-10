@@ -18,8 +18,11 @@ from bluetoothConnect import *
 from cvDetection import *
 from sensor import *
 
+
 # defining vars
 SENSOR_BIT_FLAG = 1		#big flag indicating that sensor has detected an obstacle
+THRESHOLD = 3
+
 
 # ultrasonic sensor setup
 sensor = sensorClass()	#creating a sensor class
@@ -28,30 +31,34 @@ sensor = sensorClass()	#creating a sensor class
 cvDetect = cvDetectionClass()   #creating a cvDetection class
 
 # bluetooth setup
-server_sock=BluetoothSocket( RFCOMM )
-server_sock.bind(("",PORT_ANY))
-server_sock.listen(1)
+#server_sock=BluetoothSocket( RFCOMM )
+#server_sock.bind(("",PORT_ANY))
+#server_sock.listen(1)
 
-port = server_sock.getsockname()[1]
+#port = server_sock.getsockname()[1]
 
 uuid = "00001101-0000-1000-8000-00805F9B34FB"
 
-advertise_service( server_sock, "WalkText",
-					service_id = uuid,
-					service_classes = [ uuid, SERIAL_PORT_CLASS ],
-					profiles = [ SERIAL_PORT_PROFILE ] )
+#advertise_service( server_sock, "WalkText",
+#					service_id = uuid,
+#					service_classes = [ uuid, SERIAL_PORT_CLASS ],
+#					profiles = [ SERIAL_PORT_PROFILE ] )
 
-if __debug__:
-	print "Waiting for connection on RFCOMM channel %d" % port
-client_sock, client_info = server_sock.accept()
-if __debug__:
-	print "Accepted connection from " , client_info
+#if __debug__:
+#	print "Waiting for connection on RFCOMM channel %d" % port
+#client_sock, client_info = server_sock.accept()
+#if __debug__:
+#	print "Accepted connection from " , client_info
 
-bltSoc = bluetoothConnectClass(client_sock, server_sock)   #create a bluetoothConnect class
+#bltSoc = bluetoothConnectClass(client_sock, server_sock)   #create a bluetoothConnect class
 
 if __name__ == '__main__':
 	try :
+		bitArray = [0,0,0] #stopSign, dontWalk, Walk
+		numOfFrame = 0
 		while True:
+
+
 
 			# init and set some local vars
 			detectBitsMsg = 0	#this var will be send to the android app if something has been detected
@@ -68,20 +75,32 @@ if __name__ == '__main__':
 			if not isDetected:
 				# check if cvDetection has detected something
 				cvHasFoundSign, detectedBitFlag = cvDetect.isCVDetected()
+				numOfFrame += 1
 				if cvHasFoundSign: 	#if cvDetection found something
-					detectBitsMsg ^= detectedBitFlag 	#set the bits that were detect to 1
-					isDetected = True
+					print 'detected, numOfFrame=' + str(numOfFrame) + ':' + str(bin(detectedBitFlag))
+ 					for i in range(3):
+						bitArray[i] += (detectedBitFlag & 2**(i+1)) >> (i+1)
+						if bitArray[i] >= THRESHOLD:
+							detectBitsMsg ^= 2**(i+1)
+							bitArray[i] = 0
+							ifDetected = 10
+
+				if numOfFrame >= 10:
+					numOfFrame = 0;
+					for i in range(3):
+						bitArray[i] = 0
+
 
 			# if something was detected send warning message to the phone app
 			if isDetected:
 				if __debug__:
 					print bin(detectBitsMsg)
 				status = "status:warning:" + str(detectBitsMsg)
-				bltSoc.send(status)
+				#bltSoc.send(status)
 				
 				# sleeping for 2 sec, adjust accordingly
-				if not cvHasFoundSign:
-					time.sleep(2)
+				# if not cvHasFoundSign:
+				# time.sleep(2)
 
 	except (IOError) as err:
 		pass
@@ -91,7 +110,7 @@ if __name__ == '__main__':
 			print "disconnected"
 
 		# close/cleanup bluetooth and cvdetection
-		bltSoc.close()
+		#bltSoc.close()
 		cvDetect.close()
 		if __debug__:
 			print "all done"

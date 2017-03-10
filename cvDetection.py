@@ -16,6 +16,8 @@
 # include libraries
 import time
 import cv2
+from joblib import Parallel, delayed
+import multiprocessing
 
 # defining and init vars
 IMAGE_SIZE = 200.0
@@ -51,18 +53,37 @@ class cvDetectionClass:
 
 	def isCVDetected(self):
 		bit = 0
-		numOfDetected = 0
-		for i in range(FRAME_THRESHOLD):
-			ret, frame = self.cap.read()
+		returnFlag = False
+		# numOfDetected = 0
 
-			for i in range(len(self.cascadeList)):
-				if self.isThisCascadeDetected(frame, self.cascadeList[i], 
-						self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]):   
-					numOfDetected += 1
-					if numOfDetected > NUM_DETECTED_THRESHOLD:
-						bit ^= 2**(i+1)
-						return True, bit
-		return False, bit
+		# for i in range(FRAME_THRESHOLD):
+		ret, frame = self.cap.read()
+
+		# num_cores = multiprocessing.cpu_count()
+
+		#bitResult = Parallel(n_jobs=1)(delayed(self.isThisCascadeDetected)(frame, self.cascadeList[i], self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]) for i in range(len(self.cascadeList)))
+		
+		for i in range(len(self.cascadeList)):
+			if self.isThisCascadeDetected(frame, self.cascadeList[i], 
+					self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]):   
+				returnFlag = True
+				bit ^= 2**(i+1)
+
+				# numOfDetected += 1
+				# if numOfDetected > NUM_DETECTED_THRESHOLD:
+				# 	bit ^= 2**(i+1)
+				# 	return True, bit
+
+		# for i in range(len(numOfDetected)):
+		# 	if bitResult[i]:
+		# 		numOfDetected[i] += 1
+
+		# for i in range(len(numOfDetected)):
+		# 	if numDetected[i] >= NUM_DETECTED_THRESHOLD:
+		# 		bit ^= 2**(i+1)
+		# 		returnFlag = True
+		
+		return returnFlag, bit
 		
 
 	def isThisCascadeDetected(self, frame, xml, prototype, matchThreshold, minNeighbor):  
@@ -103,3 +124,8 @@ class cvDetectionClass:
 	def close(self):
 		self.cap.release()
 		cv2.destroyAllWindows()
+
+	def processInput(self, i):
+		return i * i
+
+	
