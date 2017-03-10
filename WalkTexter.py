@@ -21,7 +21,7 @@ from sensor import *
 
 # defining vars
 SENSOR_BIT_FLAG = 1		#big flag indicating that sensor has detected an obstacle
-THRESHOLD = 3
+THRESHOLD = 1
 
 
 # ultrasonic sensor setup
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 			if sensor.detectObst():
 				detectBitsMsg ^= SENSOR_BIT_FLAG 	#set the first bit to 1
 				isDetected = True 	#set detection flag to true to send it to app
-			
+				
 			if not isDetected:
 				# check if cvDetection has detected something
 				cvHasFoundSign, detectedBitFlag = cvDetect.isCVDetected()

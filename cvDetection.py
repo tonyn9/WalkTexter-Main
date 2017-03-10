@@ -26,10 +26,10 @@ FRAME_THRESHOLD = 10
 NUM_DETECTED_THRESHOLD = 3
 #STOPSIGN_BIT_FLAG = 2
 
-cascadeNameList = ['frontal_stop_sign_cascade.xml','dont_walk_cascade.xml']
-prototypeNameList = ['stopPrototype.png','dontWalkPrototype.png']
-matchThresHoldList = [3,160]
-minNeighborsList = [3,6]
+cascadeNameList = ['frontal_stop_sign_cascade.xml','dont_walk_cascade.xml', 'walk_cascade.xml']
+prototypeNameList = ['stopPrototype.png','dontWalkPrototype.png','walkPrototype.png']
+matchThresHoldList = [3,160,150]
+minNeighborsList = [3,6,6]
 
 class cvDetectionClass:
 	#stopSignCascade = None
