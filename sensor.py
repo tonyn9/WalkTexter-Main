@@ -56,9 +56,13 @@ class sensorClass:
 		distance = pulse_duration * 17150
 		distance = round(distance, 2)
 
-		# return if the distance is less than the threshold
-		return distance < DISTANCE_THRESHOLD
+		if __debug__ and 10 < distance < DISTANCE_THRESHOLD:
+			print 'distance=' + str(distance)
 
+		# return if the distance is less than the threshold
+                if 9 < distance < DISTANCE_THRESHOLD:
+                        return True
+                return False
 	# close/cleanup method
 	def close(self):
 		GPIO.cleanup()

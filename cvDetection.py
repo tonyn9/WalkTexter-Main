@@ -16,104 +16,95 @@
 # include libraries
 import time
 import cv2
-from joblib import Parallel, delayed
-import multiprocessing
 
 # defining and init vars
 IMAGE_SIZE = 200.0
-#MATCH_THRESHOLD = 3
-FRAME_THRESHOLD = 10
-NUM_DETECTED_THRESHOLD = 3
-#STOPSIGN_BIT_FLAG = 2
 
+# list of cascade name, prototype name, match threhold, and min neighbor
 cascadeNameList = ['frontal_stop_sign_cascade.xml','dont_walk_cascade.xml', 'walk_cascade.xml']
 prototypeNameList = ['stopPrototype.png','dontWalkPrototype.png','walkPrototype.png']
 matchThresHoldList = [3,160,150]
 minNeighborsList = [3,6,6]
 
 class cvDetectionClass:
-	#stopSignCascade = None
 	cascadeList = []
 	prototypeList = []
 	cap = None
-	#stopSignPrototype = None
+
 	def __init__(self):
-		#self.stopSignCascade = cv2.CascadeClassifier('frontal_stop_sign_cascade.xml')
-		#self.stopSignPrototype = cv2.imread('stopPrototype.png',0)
+
+		# load all the cascade classifiers and the prototype images 
 		for cascade, prototype in zip(cascadeNameList,prototypeNameList):
 			self.cascadeList.append(cv2.CascadeClassifier(cascade))
 			self.prototypeList.append(cv2.imread(prototype,0))
 
+		# turn on the video camera
 		self.cap = cv2.VideoCapture(0)
 		if not self.cap.isOpened():
 			if __debug__:
 				print "DEBUG: camera can not be opened"
 			exit()
-		time.sleep(0.1)
+		time.sleep(0.1) 	# let the camera settle down 
+
 
 	def isCVDetected(self):
+
+		# bit indicates which type of object has been detected by setting the corresponding bit position to 1
 		bit = 0
+
+		# return flag initially set to 0 indicating that no match has been found
 		returnFlag = False
-		# numOfDetected = 0
-
-		# for i in range(FRAME_THRESHOLD):
+	
+		# read one frame
 		ret, frame = self.cap.read()
-
-		# num_cores = multiprocessing.cpu_count()
-
-		#bitResult = Parallel(n_jobs=1)(delayed(self.isThisCascadeDetected)(frame, self.cascadeList[i], self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]) for i in range(len(self.cascadeList)))
 		
+		# loop through each different element in the cascade list and check if the object is matched on the frame
 		for i in range(len(self.cascadeList)):
 			if self.isThisCascadeDetected(frame, self.cascadeList[i], 
 					self.prototypeList[i], matchThresHoldList[i], minNeighborsList[i]):   
+				
+				# if found, set the returnFlag to true and the bit position of the correponding to 1
 				returnFlag = True
 				bit ^= 2**(i+1)
 
-				# numOfDetected += 1
-				# if numOfDetected > NUM_DETECTED_THRESHOLD:
-				# 	bit ^= 2**(i+1)
-				# 	return True, bit
-
-		# for i in range(len(numOfDetected)):
-		# 	if bitResult[i]:
-		# 		numOfDetected[i] += 1
-
-		# for i in range(len(numOfDetected)):
-		# 	if numDetected[i] >= NUM_DETECTED_THRESHOLD:
-		# 		bit ^= 2**(i+1)
-		# 		returnFlag = True
-		
 		return returnFlag, bit
 		
 
 	def isThisCascadeDetected(self, frame, xml, prototype, matchThreshold, minNeighbor):  
+		
+		# init found match to false
+		isFoundMatch = False
+
+		# perform the haar cascade detection
 		gray = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
 		haarCascadeObject = xml.detectMultiScale(
 								gray, 
 								scaleFactor=1.4, 
 								minNeighbors=minNeighbor)
 
+		# init ORB and BFMatcher which is an additional filtering
 		orb = cv2.ORB_create()
 		bf = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
 		kp_r,des_r = orb.detectAndCompute(prototype,None)
 
-		isFoundMatch = False
-
+		# for each object that was found with haarcascade, perform ORB and BFMatcher to try to filter out false alarms
 		for (x,y,w,h) in haarCascadeObject:
 
-			# obtain object from street image
+			# locate the object in the frame
 			obj = gray[y:y+h,x:x+w]
+
+			# convert the same ratio as the prototype image
 			ratio = IMAGE_SIZE / obj.shape[1]
 			obj = cv2.resize(obj,(int(IMAGE_SIZE),int(obj.shape[0]*ratio)))
 
-			# find the keypoints and descriptors for object
+			# ORB
 			kp_o, des_o = orb.detectAndCompute(obj,None)
 			if len(kp_o) == 0 or des_o is None: continue
 
-			# match descriptors
+			# BFMatcher
 			matches = bf.match(des_r,des_o)
 
-			# draw object on street image, if threshold met
+			# if the matches is greater than the match threshold, most likely their is a good match
 			if(len(matches) >= matchThreshold):
 				if __debug__:
 					print "DEBUG: Found a match! Length of match: %d" % len(matches)
@@ -124,8 +115,3 @@ class cvDetectionClass:
 	def close(self):
 		self.cap.release()
 		cv2.destroyAllWindows()
-
-	def processInput(self, i):
-		return i * i
-
-	
