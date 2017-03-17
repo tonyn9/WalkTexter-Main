@@ -22,7 +22,7 @@ TRIG = 23
 ECHO = 24
 
 # defining and init vars
-DISTANCE_THRESHOLD = 50
+DISTANCE_THRESHOLD = 150
 
 class sensorClass:
 	def __init__(self):
@@ -56,7 +56,7 @@ class sensorClass:
 		distance = pulse_duration * 17150
 		distance = round(distance, 2)
 
-		if __debug__ and 10 < distance < DISTANCE_THRESHOLD:
+		if __debug__ and 7 < distance < DISTANCE_THRESHOLD:
 			print 'distance=' + str(distance)
 
 		# return if the distance is less than the threshold

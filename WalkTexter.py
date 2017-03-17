@@ -66,12 +66,12 @@ if __name__ == '__main__':
 			
 			isDetected = False	#flag is init to false, set to true if something has been detected to send it
 			cvHasFoundSign = False 	#flag is init to false, set to true if CVdetect has detected something
-			
+			isSensorDetected = False
 			# ultrasonic sensor processing
 			if sensor.detectObst():
 				detectBitsMsg ^= SENSOR_BIT_FLAG 	#set the first bit to 1
 				isDetected = True 	#set detection flag to true to send it to app
-				
+				isSensorDetected = True
 			# image processing
 			if not isDetected:
 				# check if cvDetection has detected something
@@ -88,7 +88,7 @@ if __name__ == '__main__':
 							isDetected = True
 
 				# reset frames
-				if numOfFrame >= 5:
+				if numOfFrame >= 10:
 					numOfFrame = 0;
 
 					# reset frame bits
@@ -103,8 +103,8 @@ if __name__ == '__main__':
 				bltSoc.send(status)
 				
 				# sleeping for 2 sec if sensor was detected
-				if not cvHasFoundSign:
-					time.sleep(2)
+				if isSensorDetected:
+					time.sleep(1)
 
 	except (IOError) as err:
 		pass
